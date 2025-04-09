@@ -1,4 +1,4 @@
-package io.kestra.plugin.templates;
+package fr.rtz.kestra.docker.compose;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.Plugin;
@@ -25,7 +25,7 @@ import java.util.*;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Create and start a Docker Compose stack",
+    title = "Create and start container in a Docker Compose stack",
     description = "Full description of this task"
 )
 @Plugin(
@@ -44,7 +44,7 @@ public class Up extends AbstractDockerCompose implements RunnableTask<ScriptOutp
         requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotNull
-    protected Property<String> stackDefinition;
+    protected Property<String> yaml;
 
     @Schema(
         title = "Enable detached mode.",
@@ -80,30 +80,29 @@ public class Up extends AbstractDockerCompose implements RunnableTask<ScriptOutp
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
         final var taskRunner = Process.instance();
-        final var yaml = runContext.render(this.stackDefinition).as(String.class).orElseThrow();
+
+        final var yaml = runContext.render(this.yaml).as(String.class).orElseThrow();
         runContext.workingDir().createFile("docker-compose.yaml", yaml.getBytes(StandardCharsets.UTF_8));
-        var cmd = new CommandsWrapper(runContext)
-            .withEnv(runContext.render(
-                this.getEnv()).asMap(String.class, String.class).isEmpty() ?
-                new HashMap<>() :
-                runContext.render(this.getEnv()).asMap(String.class, String.class)
-            )
+
+        final Map<String, String> env = runContext.render(
+            this.getEnv()).asMap(String.class, String.class).isEmpty() ?
+            new HashMap<>() :
+            runContext.render(this.getEnv()).asMap(String.class, String.class);
+        this.appendDockerComposeEnv(runContext, env);
+
+        final var cmds = this.buildCommands(runContext);
+        runContext.logger().info("Running: {}", cmds);
+        return new CommandsWrapper(runContext)
+            .withEnv(env)
             .withInputFiles(this.inputFiles)
-            .withCommands(this.buildCommands(runContext))
+            .withCommands(cmds)
             .withTaskRunner(taskRunner)
-            .withInputFiles(this.inputFiles);
-        return cmd.run();
+            .run();
     }
 
     private Property<List<String>> buildCommands(RunContext ctx) throws IllegalVariableEvaluationException {
-        final var dockerHost = ctx.render(this.dockerHost).as(String.class).orElse("");
-        var array = new ArrayList<String>() {{
-            if (!dockerHost.isBlank()) {
-                add("DOCKER_HOST=" + dockerHost);
-            }
-            add("docker-compose");
-            add("up");
-        }};
+        var array = this.initCmd(ctx);
+        array.add("up");
         if (ctx.render(this.detached).as(Boolean.class).orElse(false)) {
             array.add("--detach");
         }

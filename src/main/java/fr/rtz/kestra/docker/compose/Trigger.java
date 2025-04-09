@@ -1,5 +1,6 @@
-package io.kestra.plugin.templates;
+package fr.rtz.kestra.docker.compose;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.conditions.ConditionContext;
@@ -12,6 +13,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 @SuperBuilder
@@ -22,7 +24,7 @@ import java.util.Optional;
 @Plugin
 @Schema(
     title = "Trigger an execution randomly",
-    description ="Trigger an execution randomly"
+    description = "Trigger an execution randomly"
 )
 public class Trigger extends AbstractTrigger implements PollingTriggerInterface, TriggerOutput<Trigger.Output> {
     @Builder.Default
@@ -33,7 +35,8 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Override
     public Optional<Execution> evaluate(ConditionContext conditionContext, TriggerContext context) throws IllegalVariableEvaluationException {
         RunContext runContext = conditionContext.getRunContext();
-
+// TODO use docker compose ps -a and return a list of containers with status etc ...
+        // Utiliser --format=json
         double random = Math.random();
         if (random < runContext.render(this.min).as(Double.class).orElseThrow()) {
             return Optional.empty();
@@ -44,7 +47,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
             this,
             conditionContext,
             context,
-            Output.builder().random(random).build()
+            Output.builder().build()
         );
 
         return Optional.of(execution);
@@ -53,6 +56,22 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
-        private Double random;
+        private List<Output.ContainerInfo> containers;
+
+        public record ContainerInfo(
+            @JsonProperty("Service")
+            String service,
+            @JsonProperty("Name")
+            String name,
+            @JsonProperty("Command")
+            String command,
+            @JsonProperty("State")
+            String state,
+            @JsonProperty("Health")
+            String health,
+            @JsonProperty("ExitCode")
+            Integer exitCode
+        ) {
+        }
     }
 }

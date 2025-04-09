@@ -1,0 +1,21 @@
+id: start-n-stop
+namespace: fr.rtz.kestra.docker.compose
+
+tasks:
+- id: up
+  type: fr.rtz.kestra.docker.compose.Up
+  projectName: docker-compose-test
+  detached: true
+  yaml: |
+    services:
+      nginx:
+        image: nginx
+- id: stop
+  type: fr.rtz.kestra.docker.compose.Stop
+  projectName: docker-compose-test
+- id: start
+  type: fr.rtz.kestra.docker.compose.Start
+  projectName: docker-compose-test
+- id: down
+  type: fr.rtz.kestra.docker.compose.Down
+  projectName: docker-compose-test
