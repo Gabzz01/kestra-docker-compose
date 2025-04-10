@@ -1,6 +1,7 @@
 package fr.rtz.kestra.docker.compose;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
@@ -30,27 +31,27 @@ import java.util.Map;
 )
 @Plugin(
     examples = {
-        @io.kestra.core.models.annotations.Example(
+        @Example(
             title = "Docker Compose",
-            code = {"format: \"Text to be reverted\""}
+            code = """
+                id: stop-containers
+                namespace: company.team
+                tasks:
+                    - id: stop-containers
+                        type: fr.rtz.kestra.docker.compose.Stop
+                        projectName: my-compose-project
+                """
         )
     }
 )
+// TODO example avec remote docker host
 public class Stop extends AbstractDockerCompose implements RunnableTask<ScriptOutput> {
-
-    @Schema(
-        title = "Additional environment variables to inject in the process"
-    )
-    private Property<Map<String, String>> env;
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
         final var taskRunner = Process.instance();
 
-        final Map<String, String> env = runContext.render(
-            this.getEnv()).asMap(String.class, String.class).isEmpty() ?
-            new HashMap<>() :
-            runContext.render(this.getEnv()).asMap(String.class, String.class);
+        final Map<String, String> env = new HashMap<>();
         this.appendDockerComposeEnv(runContext, env);
 
         final var cmds = this.buildCommands(runContext);
@@ -65,13 +66,6 @@ public class Stop extends AbstractDockerCompose implements RunnableTask<ScriptOu
     private Property<List<String>> buildCommands(RunContext ctx) throws IllegalVariableEvaluationException {
         var array = this.initCmd(ctx);
         array.add("stop");
-        /*
-        if (ctx.render(this.timeout).as(Duration.class).map(it -> it.getSeconds()).orElse(0) > 0) {
-            array.add("--timeout");
-            array.add(String.valueOf(ctx.render(this.timeout).as(Long.class).orElseThrow()));
-        }
-
-         */
         return Property.of(array);
     }
 }

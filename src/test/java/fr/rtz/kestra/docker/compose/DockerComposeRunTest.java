@@ -6,7 +6,6 @@ import io.kestra.core.queues.QueueException;
 import org.junit.jupiter.api.Test;
 import io.kestra.core.models.executions.Execution;
 
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -23,7 +22,7 @@ import static org.hamcrest.Matchers.is;
 class DockerComposeRunTest {
     @SuppressWarnings("unchecked")
     @Test
-    @ExecuteFlow("flows/docker-compose.yaml")
+    @ExecuteFlow("flows/start-n-stop.yaml")
     void flow(Execution execution) throws TimeoutException, QueueException {
         assertThat(execution.getTaskRunList(), hasSize(4));
         //assertThat(((Map<String, Object>)execution.getTaskRunList().get(2).getOutputs().get("child")).get("value"), is("task-id"));

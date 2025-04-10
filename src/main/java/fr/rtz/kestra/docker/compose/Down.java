@@ -26,16 +26,25 @@ import java.util.Map;
 @NoArgsConstructor
 @Schema(
     title = "Stop and remove container for a Docker Compose stack",
-    description = "Calls docker-compose down to stop and remove containers, networks, images, and volumes defined in the corresponding project."
+    description = "Calls docker-compose down to stop and remove containers, networks, images, and volumes defined in the corresponding project, also remove images."
 )
 @Plugin(
     examples = {
         @io.kestra.core.models.annotations.Example(
-            title = "Docker Compose",
-            code = {"format: \"Text to be reverted\""}
+            title = "Stop containers and remove images",
+            code = """
+                id: stop-n-remove-containers
+                namespace: company.team
+                tasks:
+                    - id: down
+                        type: fr.rtz.kestra.docker.compose.Down
+                        projectName: my-compose-project
+                        removeImages: all
+                """
         )
     }
 )
+// TODO example avec remote docker host
 public class Down extends AbstractDockerCompose implements RunnableTask<ScriptOutput> {
 
     @Schema(
@@ -45,19 +54,11 @@ public class Down extends AbstractDockerCompose implements RunnableTask<ScriptOu
     )
     protected Property<RemoveImagesOptions> removeImages;
 
-    @Schema(
-        title = "Additional environment variables to inject in the process"
-    )
-    private Property<Map<String, String>> env;
-
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
         final var taskRunner = Process.instance();
 
-        final Map<String, String> env = runContext.render(
-            this.getEnv()).asMap(String.class, String.class).isEmpty() ?
-            new HashMap<>() :
-            runContext.render(this.getEnv()).asMap(String.class, String.class);
+        final Map<String, String> env = new HashMap<>();
         this.appendDockerComposeEnv(runContext, env);
 
         final var cmds = this.buildCommands(runContext);
@@ -77,13 +78,6 @@ public class Down extends AbstractDockerCompose implements RunnableTask<ScriptOu
             array.add("--rmi");
             array.add(removeImages.getValue());
         }
-        /*
-        if (ctx.render(this.timeout).as(Integer.class).orElse(0) > 0) {
-            array.add("--timeout");
-            array.add(String.valueOf(ctx.render(this.timeout).as(Integer.class).orElseThrow()));
-        }
-
-         */
         return Property.of(array);
     }
 }

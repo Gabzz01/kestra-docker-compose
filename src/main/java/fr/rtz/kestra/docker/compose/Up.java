@@ -1,6 +1,7 @@
 package fr.rtz.kestra.docker.compose;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.*;
@@ -30,13 +31,92 @@ import java.util.*;
 )
 @Plugin(
     examples = {
-        @io.kestra.core.models.annotations.Example(
-            title = "Docker Compose",
-            code = {"format: \"Text to be reverted\""}
+        @Example(
+            title = "Create and start a Docker Compose stack with detached mode",
+            code = """
+                id: up-containers
+                namespace: company.team
+                tasks:
+                  - id: deploy
+                    type: fr.rtz.kestra.docker.compose.Up
+                    detached: true
+                    yaml: |
+                        services:
+                            web:
+                                image: nginx
+                                ports:
+                                    - "8080:80"
+                            db:
+                                image: postgres
+                """
+        ),
+        @Example(
+            title = "Create and start a Docker Compose stack from file",
+            code = """
+                id: up-containers
+                namespace: company.team
+                tasks:
+                  - id: deploy
+                    type: fr.rtz.kestra.docker.compose.Up
+                    detached: true
+                    yaml: read('docker-compose.yaml')
+                """
+        ),
+        @Example(
+            title = "Create and start a Docker Compose stack leveraging compose environment variables interpolation",
+            code = """
+                id: up-containers
+                namespace: company.team
+                tasks:
+                  - id: deploy
+                    type: fr.rtz.kestra.docker.compose.Up
+                    detached: true
+                    env:
+                        WEB_IMG: nginx
+                    yaml: |
+                        services:
+                            web:
+                                image: ${WEB_IMG}
+                                ports:
+                                    - "8080:80"
+                            db:
+                                image: postgres
+                """
+        ),
+        @Example(
+            title = "Create and start a Docker Compose stack leveraging compose config files",
+            code = """
+                id: up-containers
+                namespace: company.team
+                tasks:
+                  - id: deploy
+                    type: fr.rtz.kestra.docker.compose.Up
+                    projectName: my-compose-project
+                    detached: true
+                    yaml: |
+                        services:
+                            web:
+                                image: nginx
+                                ports:
+                                    - "8080:80"
+                            db:
+                                image: postgres
+
+                    inputFiles:
+                      - id: docker-compose.override.yaml
+                        content: |
+                            version: '3'
+                            services:
+                              web:
+                                environment:
+                                  - FOO=bar
+                """
         )
     }
 )
-// TODO exploire namespace file usage
+
+// TODO example avec remote docker host
+// TODO explore namespace file usage -> Permettre la résolution des configurations de stack
 public class Up extends AbstractDockerCompose implements RunnableTask<ScriptOutput>, InputFilesInterface {
 
     @Schema(

@@ -1,6 +1,7 @@
 package fr.rtz.kestra.docker.compose;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.InputFilesInterface;
@@ -27,17 +28,38 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Start containers in a Docker Compose stack",
-    description = "Full description of this task"
+    title = "Start existing containers in a Docker Compose stack",
+    description = "Starts existing containers in a given project"
 )
 @Plugin(
     examples = {
-        @io.kestra.core.models.annotations.Example(
-            title = "Docker Compose",
-            code = {"format: \"Text to be reverted\""}
+        @Example(
+            title = "Start and wait for container to terminate",
+            code = """
+                id: start-containers
+                namespace: company.team
+                tasks:
+                    - id: down
+                        type: fr.rtz.kestra.docker.compose.Start
+                        projectName: my-compose-project
+                """
+        ),
+        @Example(
+            title = "Start containers in detached mode",
+            code = """
+                id: start-containers
+                namespace: company.team
+                tasks:
+                    - id: down
+                        type: fr.rtz.kestra.docker.compose.Start
+                        detached: true
+                        projectName: my-compose-project
+                """
         )
     }
 )
+
+// TODO example avec remote docker host
 public class Start extends AbstractDockerCompose implements RunnableTask<ScriptOutput>, InputFilesInterface {
 
     @Schema(

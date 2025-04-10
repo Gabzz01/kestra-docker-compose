@@ -27,7 +27,8 @@ public abstract class AbstractDockerCompose extends Task {
     private final static String COMPOSE_STATUS_STDOUT = "COMPOSE_STATUS_STDOUT";
 
     @Schema(
-        title = "Docker Host"
+        title = "Docker Host",
+        description = "The target Docker Engine host."
     )
     protected Property<String> dockerHost;
 
