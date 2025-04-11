@@ -1,3 +1,4 @@
+![img](./doc/logo.png)
 # Kestra Docker Compose Plugin
 
 A naive implementation of a [Kestra](https://github.com/kestra-io/kestra) plugin to run docker-compose commands.
@@ -7,8 +8,10 @@ on the Kestra host machine.
 ## Motivations
 
 This idea emerged as I was setting up a GitOps workflow for my docker-compose deployed projects.
+
 I usually use Portainer when it comes to setting up docker compose based deployments.
 But as the community edition lacks webhook features, which I really needed (e.g. to run smoke tests after redeploy),
+
 I decided to put the extra effort into implementing a custom plugin and relies on the Kestra native ecosystem to
 achieve desired results.
 
@@ -28,7 +31,7 @@ around it to allow for easy integration with Kestra workflows.
 
 ## Examples
 
-### Alerting
+### 🚨 Alerting
 
 This examples shows how to use this plugin Trigger to implement a simple alerting system for a docker-compose
 based project. A Slack notification is emitted every minute when a container is neither running nor healthy.
@@ -54,7 +57,7 @@ triggers:
     outputCondition: "{{ containers | jq('.[] | select((.State != \"running\") and .State != \"healthy\")') | length > 0 }}"
 ```
 
-### GitOps
+### 🚀 GitOps
 
 This example shows how to use the plugin to implement a GitOps workflow for a docker-compose based project. The
 workflows watches the docker-compose.yaml file for changes in the remote repository and triggers a redeployment when a
@@ -83,7 +86,7 @@ tasks:
     detached: true
     # wait: true
     yaml: "{{ trigger.body }}"
-    # Update stack definition in keyvault
+    # Update stack definition in store
   - id: update_kv
     type: io.kestra.plugin.core.kv.Set
     key: stack
