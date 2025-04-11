@@ -78,7 +78,7 @@ tasks:
           auth: "{{ '{{ kv('GH_USR') }}: {{ kv('GH_TOKEN') }}' | base64encode }}"
     # Deploy updated stack definition
   - id: redeploy
-    projectName: markeat
+    projectName: my-compose-project
     type: fr.rtz.kestra.docker.compose.Up
     detached: true
     # wait: true

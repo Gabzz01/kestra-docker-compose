@@ -1,0 +1,60 @@
+name: Build
+run-name: ${{ github.actor }} is building Kestra-DockerCompose Docker images 🐳
+permissions: write-all
+on:
+  push:
+    branches:
+      - master
+      - main
+      - releases/*
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - master
+      - main
+      - releases/*
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 21
+          cache: "gradle"
+          cache-dependency-path: |
+            *.gradle*
+            **/gradle-wrapper.properties
+        # Install Docker Compose to run the integration tests
+      - name: Setup Docker Compose
+        run: |
+          curl -SL https://github.com/docker/compose/releases/download/v2.34.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+      - name: Build
+        run: ./gradlew build
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ghcr.io/${{ github.repository }}/kestra-docker-compose
+          tags: type=sha
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
