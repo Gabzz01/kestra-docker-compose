@@ -31,87 +31,83 @@ around it to allow for easy integration with Kestra workflows.
 ### Alerting
 
 This examples shows how to use this plugin Trigger to implement a simple alerting system for a docker-compose
-based project. A Slack notification is emitted when a container neither running nor healthy.
+based project. A Slack notification is emitted every minute when a container is neither running nor healthy.
 
 ```yaml
 id: alert-docker
-namespace: fr.rtz.markeat.devops
+namespace: company.team.devops
 
 tasks:
+  # Prebuild msg to avoid struggling with quotes escaping etc ...
+  - id: build_msg
+    type: "io.kestra.plugin.core.output.OutputValues"
+    values:
+      msg: ":warning: Containers stopped : {{ trigger.containers | jq('[.[] | select((.State != \"running\") and .State != \"healthy\") | .Name] | join(\", \")') }}"
   - id: alert
     type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
-    url: myWebhookUrl
-    payload: |
-      {
-        "text": "Containers stopped : {{ containers | jq('.[] | select((.State != \"running\") and .State != \"healthy\")') }}"
-      }
+    url: "{{ kv('SLACK_WEBHOOK_URL') }}"
+    payload: "{{ {'text': outputs['build_msg'].values.msg } | toJson }}"
 triggers:
-  - id: poll-docker
+  - id: poll_docker
     type: fr.rtz.kestra.docker.compose.Ps
-    projectName: test
+    projectName: my-compose-project
     outputCondition: "{{ containers | jq('.[] | select((.State != \"running\") and .State != \"healthy\")') | length > 0 }}"
 ```
 
 ### GitOps
 
 This example shows how to use the plugin to implement a GitOps workflow for a docker-compose based project. The
-workflows watches the docker-compose.yaml file for changes in the remote repository and triggers a redeploy when a
+workflows watches the docker-compose.yaml file for changes in the remote repository and triggers a redeployment when a
 change is detected.
-
-// TODO https://kestra.io/docs/expressions#example-with-indent-and-nindent
-pas besoin de script custom
 
 ```yaml
 id: gitops
 namespace: company.team.devops
 
 tasks:
-  # List all images in the docker-compose.yaml file
-  - id: list_images
-    type: io.kestra.plugin.scripts.python.Script
-    beforeCommands:
-      - pip install pyyaml
-    script: |
-      from kestra import Kestra
-      from yaml import safe_load
-      raw = """
-      {{ trigger.body }}
-      """
-      data = safe_load(raw)
-      services = data.get("services", {})
-      images = [s.get("image") for s in services.values() if "image" in s]
-      Kestra.outputs({"images": images})
-  # Pull all images with credentials in advance to limit down time.
-  - id: 1_each
+  # Concurrently pull all images with credentials in advance to limit downtime.
+  - id: list-img
     type: io.kestra.plugin.core.flow.ForEach
-    values: "{{ outputs.list_images.vars.images }}"
+    concurrencyLimit: 0
+    values: "{{ yaml(trigger.body).services | values }}"
     tasks:
       - id: pull-img
         type: io.kestra.plugin.docker.Pull
-        image: "{{taskrun.value}}"
+        image: "{{ yaml(taskrun.value).image }}"
         credentials:
-          username: gabzz01
-          password: "{{ secrets('GH_PAT') }}"
+          auth: "{{ '{{ kv('GH_USR') }}: {{ kv('GH_TOKEN') }}' | base64encode }}"
+    # Deploy updated stack definition
   - id: redeploy
+    projectName: markeat
     type: fr.rtz.kestra.docker.compose.Up
-    stackDefinition: "{{ trigger.body }}"
+    detached: true
+    # wait: true
+    yaml: "{{ trigger.body }}"
+    # Update stack definition in keyvault
+  - id: update_kv
+    type: io.kestra.plugin.core.kv.Set
+    key: stack
+    kvType: STRING
+    overwrite: true
+    value: "{{ trigger.body }}"
+    # Notify via Slack
   - id: notify
     type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
-    payload: Successfully deployed to staging environment
-    url: "{{ secrets('SLACK_WEBHOOK_URL') }}"
+    payload: "{{ {'text': ':rocket: Successfully deployed to staging environment' } | toJson }}"
+    url: "{{ kv('SLACK_WEBHOOK_URL') }}"
 
 triggers:
   - id: poll-stack
     type: io.kestra.plugin.core.http.Trigger
-    uri: https://raw.githubusercontent.com/RTZ-Developments/MarkEat/refs/heads/master/environments/staging/docker-compose.yaml
+    uri: "https://raw.githubusercontent.com/{{ kv('RAW_STACK_URL') }}"
     headers:
       Accept: application/vnd.github.v3.raw
-      Authorization: "token {{ secrets('GH_PAT') }}"
+      Authorization: "token {{ kv('GH_TOKEN') }}"
     responseCondition: "{{ response.body != kv('stack', errorOnMissing=false) }}"
     interval: PT30S
 ```
 
-## Running the project in local
+## Running the project locally
 
 ### Prerequisites
 

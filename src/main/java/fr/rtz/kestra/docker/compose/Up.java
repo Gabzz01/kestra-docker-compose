@@ -26,13 +26,14 @@ import java.util.*;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Create and start container in a Docker Compose stack",
+    title = "Create and start containers",
     description = "Full description of this task"
 )
 @Plugin(
     examples = {
         @Example(
             title = "Create and start a Docker Compose stack with detached mode",
+            full = true,
             code = """
                 id: up-containers
                 namespace: company.team
@@ -40,18 +41,20 @@ import java.util.*;
                   - id: deploy
                     type: fr.rtz.kestra.docker.compose.Up
                     detached: true
+                    projectName: my-compose-project
                     yaml: |
-                        services:
-                            web:
-                                image: nginx
-                                ports:
-                                    - "8080:80"
-                            db:
-                                image: postgres
+                      services:
+                        web:
+                          image: nginx
+                          ports:
+                            - "8080:80"
+                        db:
+                          image: postgres
                 """
         ),
         @Example(
             title = "Create and start a Docker Compose stack from file",
+            full = true,
             code = """
                 id: up-containers
                 namespace: company.team
@@ -59,11 +62,13 @@ import java.util.*;
                   - id: deploy
                     type: fr.rtz.kestra.docker.compose.Up
                     detached: true
+                    projectName: my-compose-project
                     yaml: read('docker-compose.yaml')
                 """
         ),
         @Example(
             title = "Create and start a Docker Compose stack leveraging compose environment variables interpolation",
+            full = true,
             code = """
                 id: up-containers
                 namespace: company.team
@@ -71,36 +76,38 @@ import java.util.*;
                   - id: deploy
                     type: fr.rtz.kestra.docker.compose.Up
                     detached: true
+                    projectName: my-compose-project
                     env:
-                        WEB_IMG: nginx
+                      WEB_IMG: nginx
                     yaml: |
                         services:
-                            web:
-                                image: ${WEB_IMG}
-                                ports:
-                                    - "8080:80"
-                            db:
-                                image: postgres
+                          web:
+                            image: ${WEB_IMG}
+                              ports:
+                                - "8080:80"
+                          db:
+                            image: postgres
                 """
         ),
         @Example(
             title = "Create and start a Docker Compose stack leveraging compose config files",
+            full = true,
             code = """
                 id: up-containers
                 namespace: company.team
                 tasks:
                   - id: deploy
                     type: fr.rtz.kestra.docker.compose.Up
-                    projectName: my-compose-project
                     detached: true
+                    projectName: my-compose-project
                     yaml: |
-                        services:
-                            web:
-                                image: nginx
-                                ports:
-                                    - "8080:80"
-                            db:
-                                image: postgres
+                      services:
+                        web:
+                          image: nginx
+                          ports:
+                            - "8080:80"
+                          db:
+                            image: postgres
 
                     inputFiles:
                       - id: docker-compose.override.yaml

@@ -11,7 +11,6 @@ import io.kestra.plugin.core.runner.Process;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,32 +27,34 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Start existing containers in a Docker Compose stack",
-    description = "Starts existing containers in a given project"
+    title = "Start containers",
+    description = "Starts existing containers in a given Docker Compose project"
 )
 @Plugin(
     examples = {
         @Example(
             title = "Start and wait for container to terminate",
+            full = true,
             code = """
                 id: start-containers
                 namespace: company.team
                 tasks:
-                    - id: down
-                        type: fr.rtz.kestra.docker.compose.Start
-                        projectName: my-compose-project
+                  - id: start-containers
+                    type: fr.rtz.kestra.docker.compose.Start
+                    projectName: my-compose-project
                 """
         ),
         @Example(
             title = "Start containers in detached mode",
+            full = true,
             code = """
                 id: start-containers
                 namespace: company.team
                 tasks:
-                    - id: down
-                        type: fr.rtz.kestra.docker.compose.Start
-                        detached: true
-                        projectName: my-compose-project
+                  - id: down
+                    type: fr.rtz.kestra.docker.compose.Start
+                    detached: true
+                    projectName: my-compose-project
                 """
         )
     }

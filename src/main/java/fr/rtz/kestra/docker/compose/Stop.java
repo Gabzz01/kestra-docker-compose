@@ -26,20 +26,21 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Stop containers in a Docker Compose stack",
+    title = "Stop containers.",
     description = "Stops running containers without removing them. They can be started again with the Start task."
 )
 @Plugin(
     examples = {
         @Example(
             title = "Docker Compose",
+            full = true,
             code = """
                 id: stop-containers
                 namespace: company.team
                 tasks:
-                    - id: stop-containers
-                        type: fr.rtz.kestra.docker.compose.Stop
-                        projectName: my-compose-project
+                  - id: stop-containers
+                    type: fr.rtz.kestra.docker.compose.Stop
+                    projectName: my-compose-project
                 """
         )
     }

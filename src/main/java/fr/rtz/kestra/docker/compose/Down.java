@@ -3,6 +3,7 @@ package fr.rtz.kestra.docker.compose;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
+import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.core.runner.Process;
@@ -25,21 +26,23 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Stop and remove container for a Docker Compose stack",
-    description = "Calls docker-compose down to stop and remove containers, networks, images, and volumes defined in the corresponding project, also remove images."
+    title = "Stop and remove container.",
+    description = "Calls docker-compose down to stop and remove containers, networks and volumes defined in the " +
+        "corresponding project, also remove images if enabled."
 )
 @Plugin(
     examples = {
-        @io.kestra.core.models.annotations.Example(
+        @Example(
             title = "Stop containers and remove images",
+            full = true,
             code = """
                 id: stop-n-remove-containers
                 namespace: company.team
                 tasks:
-                    - id: down
-                        type: fr.rtz.kestra.docker.compose.Down
-                        projectName: my-compose-project
-                        removeImages: all
+                  - id: down
+                    type: fr.rtz.kestra.docker.compose.Down
+                    projectName: my-compose-project
+                    removeImages: all
                 """
         )
     }

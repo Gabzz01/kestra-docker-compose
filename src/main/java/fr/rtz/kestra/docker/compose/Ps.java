@@ -11,6 +11,7 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.runners.AbstractLogConsumer;
 import io.kestra.core.models.triggers.*;
 import io.kestra.core.runners.RunContext;
+import io.kestra.core.models.annotations.Example;
 import io.kestra.core.utils.TruthUtils;
 import io.kestra.plugin.core.runner.Process;
 import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
@@ -28,29 +29,32 @@ import java.util.*;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Periodic container status poll trigger.",
-    description = "Periodically poll for Docker Compose containers status"
+    title = "Lists containers with status.",
+    description = "Periodically poll for a Docker Compose project containers status"
 )
 @Plugin(
     examples = {
-        @io.kestra.core.models.annotations.Example(
+        @Example(
             title = "Poll for unhealthy / stopped containers and alert via slack",
+            full = true,
             code = """
-                id: alert-docker-unhealthy
-                namespace: company.team
+                id: alert-docker
+                namespace: fr.rtz.markeat.devops
 
                 tasks:
+                    # Prebuild msg to avoid struggling with quotes escaping etc ...
+                  - id: build-msg
+                    type: "io.kestra.plugin.core.output.OutputValues"
+                    values:
+                      msg: "Containers stopped : {{ trigger.containers | jq('[.[] | select((.State != \\"running\\") and .State != \\"healthy\\") | .Name] | join(\\", \\")') }}"
                   - id: alert
                     type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
-                    url:  "{{ secret('SLACK_WEBHOOK_URL') }}"
-                    payload: |
-                      {
-                        "text": "Containers stopped : {{ containers | jq('.[] | select((.State != \\"running\\") and .State != \\"healthy\\")  | map({Name})') }}"
-                      }
+                    url: kv('slack-webhook')
+                    payload: "{{ {'text': outputs['build-msg'].values.msg } | toJson }}"
                 triggers:
                   - id: poll-docker
                     type: fr.rtz.kestra.docker.compose.Ps
-                    projectName: my-project
+                    projectName: my-compose-project
                     outputCondition: "{{ containers | jq('.[] | select((.State != \\"running\\") and .State != \\"healthy\\")') | length > 0 }}"
                 """
         )
@@ -169,23 +173,38 @@ public class Ps extends AbstractTrigger implements PollingTriggerInterface, Trig
     public static class Output implements io.kestra.core.models.tasks.Output {
         private List<Output.ContainerInfo> containers;
 
+        @Getter
+        @Builder
         @JsonIgnoreProperties(ignoreUnknown = true)
-        public record ContainerInfo(
+        public static class ContainerInfo {
             @JsonProperty("ID")
-            String id,
+            @Schema(
+                title = "Id.",
+                description = "The container Id."
+            )
+            private final String id;
+
             @JsonProperty("Service")
-            String service,
+            @Schema(
+                title = "Service.",
+                description = "The service to which this container is an instance of."
+            )
+            private final String service;
+
             @JsonProperty("Name")
-            String name,
+            @Schema(
+                title = "Name.",
+                description = "The container name."
+            )
+            private final String name;
             @JsonProperty("Command")
-            String command,
+            private final String command;
             @JsonProperty("State")
-            String state,
+            private final String state;
             @JsonProperty("Health")
-            String health,
+            private final String health;
             @JsonProperty("ExitCode")
-            Integer exitCode
-        ) {
+            private final Integer exitCode;
         }
     }
 }
